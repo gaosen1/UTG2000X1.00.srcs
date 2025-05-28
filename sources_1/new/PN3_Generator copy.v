@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // 模块名称: PN3_Generator
-// 功能描述: 生成PN3序列数据
+// 功能描述: 生成PN3序列数据123
 //////////////////////////////////////////////////////////////////////////////////
 
 module PN3_Generator(
@@ -21,16 +21,6 @@ module PN3_Generator(
     reg [2:0] shift_reg;             // 移位寄存器
     reg [1:0] bit_counter;           // 位计数器
     reg [31:0] rate_counter;         // 频率计数器
-    
-    // 初始化
-    initial begin
-        shift_reg = 3'b001;     // 初始种子设置为001
-        bit_counter = 0;
-        rate_counter = 0;
-        data_valid = 0;
-        pn_seed = 3'b001;
-        pn_data_out = 0;
-    end
     
     // PN3序列生成器
     function [2:0] next_pn;

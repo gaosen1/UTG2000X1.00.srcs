@@ -260,18 +260,6 @@ begin
     // 等待一段时间进行测试
     #100000;
     $display("\n继续PN3序列测试...");
-    
-    // 调整频率测试
-    #100000;
-    $display("\n测试不同频率的PN3序列...");
-    basic_freq1 = 48'd4503599627370; // 降低频率
-    fmc_send_cmd(12'h003,basic_freq1[ 7: 0]);
-    fmc_send_cmd(12'h004,basic_freq1[15: 8]);
-    fmc_send_cmd(12'h005,basic_freq1[23:16]);
-    fmc_send_cmd(12'h006,basic_freq1[31:24]);
-    fmc_send_cmd(12'h007,basic_freq1[39:32]);
-    fmc_send_cmd(12'h008,basic_freq1[47:40]);
-
 
 end
 
@@ -322,45 +310,15 @@ begin
      ch2_wave  <=   CH_DAC_DATA_P;
 end
 
-// 添加监控信号
-wire pn_data_out_ch1;
-wire pn_data_out_ch2;
-wire [2:0] pn_seed_ch1;
-wire data_valid_ch1;
-wire [31:0] rate_div_ch1;
+// 监控UTG2000X_TOP模块中的PN3生成器输出
+wire pn_out = u_UTG2000X_TOP.pn_data_out_ch1;
+wire [2:0] pn_seed = u_UTG2000X_TOP.pn_seed_ch1;
+wire data_valid = u_UTG2000X_TOP.data_valid_ch1;
 
-// 监控PN3模块的信号和输出
+// 添加监控
 initial begin
-    // 使用force语句强制设置内部信号
-    force u_UTG2000X_TOP.CH1_ON_OFF = 1'b1;
-    $display("已强制设置CH1_ON_OFF为高电平");
-    
-    // 监控关键信号
-    $monitor("Time=%t, pn_data_out_ch1=%b, pn_seed_ch1=%b, data_valid_ch1=%b, rate_div=%d", 
-             $time, pn_data_out_ch1, pn_seed_ch1, data_valid_ch1, rate_div_ch1);
-    
-    // 直接设置rate_div为有效值
-    #100;
-    $display("设置rate_div为有效值...");
-    force u_UTG2000X_TOP.pn3_generator_ch1.rate_div = 32'd1; // 设置为小值便于观察
-    
-    // 确保shift_reg和其他寄存器有初始值
-    force u_UTG2000X_TOP.pn3_generator_ch1.shift_reg = 3'b001;
-    force u_UTG2000X_TOP.pn3_generator_ch1.bit_counter = 2'b00;
-    force u_UTG2000X_TOP.pn3_generator_ch1.rate_counter = 32'd0;
-    
-    // 重置一下信号来触发初始化
-    force u_UTG2000X_TOP.CH1_SYNC = 1'b0;
-    #100;
-    force u_UTG2000X_TOP.CH1_SYNC = 1'b1;
-    $display("重置完成，开始运行...");
+    $monitor("Time=%t, PN_OUT=%b, PN_SEED=%b, DATA_VALID=%b", $time, pn_out, pn_seed, data_valid);
+    $display("开始监控TOP模块中的PN3生成器...");
 end
-
-// 将PN3模块的信号连接到测试平台
-assign pn_data_out_ch1 = u_UTG2000X_TOP.pn_data_out_ch1;
-assign pn_data_out_ch2 = u_UTG2000X_TOP.pn_data_out_ch2;
-assign pn_seed_ch1 = u_UTG2000X_TOP.pn_seed_ch1;
-assign data_valid_ch1 = u_UTG2000X_TOP.data_valid_ch1;
-assign rate_div_ch1 = u_UTG2000X_TOP.pn3_generator_ch1.rate_div;
 
 endmodule

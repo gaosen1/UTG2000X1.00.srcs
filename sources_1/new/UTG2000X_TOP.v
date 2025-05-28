@@ -351,39 +351,25 @@ dds_compiler_0 dds_compiler_q (
 // 添加PN3生成器模块
 // 声明PN3输出信号
 wire pn_data_out_ch1;
-wire pn_data_out_ch2;
 wire data_valid_ch1;
-wire data_valid_ch2;
 wire [2:0] pn_seed_ch1;
-wire [2:0] pn_seed_ch2;
 
 // 实例化通道1的PN3生成器
 PN3_Generator pn3_generator_ch1 (
     .clk                    ( CLK_HIGH               ),
-    .rst_n                  ( CH1_SYNC               ),
-    .enable                 ( CH1_ON_OFF             ),
-    .rate_div               ( 32'd1 ), // 固定分频系数为1
+    .rst_n                  ( 1'b1                   ),
+    .enable                 ( 1'b1                   ),
+    .rate_div               ( 32'd1                  ),
     .pn_data_out            ( pn_data_out_ch1        ),
     .data_valid             ( data_valid_ch1         ),
     .pn_seed                ( pn_seed_ch1            )
 );
 
-// 实例化通道2的PN3生成器
-PN3_Generator pn3_generator_ch2 (
-    .clk                    ( CLK_HIGH               ),
-    .rst_n                  ( CH2_SYNC               ),
-    .enable                 ( CH1_ON_OFF             ),
-    .rate_div               ( 32'd1 ), // 固定分频系数为1
-    .pn_data_out            ( pn_data_out_ch2        ),
-    .data_valid             ( data_valid_ch2         ),
-    .pn_seed                ( pn_seed_ch2            )
-);
-
 // 将PN3输出转换为DAC格式
 // 注意：这里将单比特PN序列扩展为DAC所需的多位数据
-// 假设DATA1_TO_DACm和DATA2_TO_DACm是16位宽
+// 假设 DATA1_TO_DACm和DATA2_TO_DACm是16位宽
 assign DATA1_TO_DACm = pn_data_out_ch1 ? 16'h7FFF : 16'h8000; // 1->最大正值，0->最小负值
-assign DATA2_TO_DACm = pn_data_out_ch2 ? 16'h7FFF : 16'h8000; // 1->最大正值，0->最小负值
+assign DATA2_TO_DACm = pn_data_out_ch1 ? 16'h7FFF : 16'h8000; // 使用相同的输出
 
 
 //---------------------------------数据转换输出
@@ -397,6 +383,13 @@ DAC_ODDR_OUT   u_DAC_ODDR_OUT(
                 .clk_reset              ( ~PLL_LOCKED                    ), // input clk_reset
                 .io_reset               ( ~PLL_LOCKED                    )  // input io_reset
 ); 
+//                 .data_out_to_pins_n     ( CH_DAC_DATA_N                  ), // output [15:0] data_out_to_pins_n
+//                 .clk_to_pins_p          ( CH_DAC_DCI_P                   ), // output clk_to_pins_p
+//                 .clk_to_pins_n          ( CH_DAC_DCI_N                   ), // output clk_to_pins_n
+//                 .clk_in                 ( CLK_HIGH                       ), // input clk_in
+//                 .clk_reset              ( ~PLL_LOCKED                    ), // input clk_reset
+//                 .io_reset               ( ~PLL_LOCKED                    )  // input io_reset
+// ); 
 
 
 endmodule
