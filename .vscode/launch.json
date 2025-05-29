@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "运行PRBS仿真",
+            "type": "shell",
+            "request": "launch",
+            "command": "cd ${workspaceFolder}/Mine && iverilog -o prbs_sim.vvp prbs_generator_tb.v prbs_generator_top.v prbs_bitrate_clk_gen.v prbs_core_lfsr.v && vvp prbs_sim.vvp",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "name": "运行PRBS仿真并查看波形",
+            "type": "shell",
+            "request": "launch",
+            "command": "cd ${workspaceFolder}/Mine && iverilog -o prbs_sim.vvp prbs_generator_tb.v prbs_generator_top.v prbs_bitrate_clk_gen.v prbs_core_lfsr.v && vvp prbs_sim.vvp && gtkwave prbs_sim.vcd",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        }
+    ]
+}
