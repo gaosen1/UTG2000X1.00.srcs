@@ -63,6 +63,18 @@
                 "clear": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "清理仿真文件",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/Mine && rm -f *.vvp *.vcd",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": []
         }
     ]
 }

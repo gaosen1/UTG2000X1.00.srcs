@@ -12,7 +12,7 @@ reg         reset_n;
 
 // 配置寄存器
 reg         prbs_mode_select;
-reg [3:0]   prbs_pn_select_reg;
+reg [4:0]   prbs_pn_select_reg;
 reg [31:0]  prbs_bit_rate_config_reg;
 reg [7:0]   prbs_edge_time_config_reg;
 reg [15:0]  prbs_amplitude_config_reg;
@@ -22,6 +22,7 @@ reg [15:0]  prbs_dc_offset_config_reg;
 wire        prbs_valid;
 wire        prbs_bit_out_debug;
 wire [15:0] prbs_dac_data;
+wire [32:0] lfsr_state_debug;     // LFSR寄存器状态，用于调试
 
 // 计数器和其他测试变量
 integer     i;
@@ -40,7 +41,8 @@ prbs_generator_top uut (
     .prbs_dc_offset_config_reg(prbs_dc_offset_config_reg),
     .prbs_valid(prbs_valid),
     .prbs_bit_out_debug(prbs_bit_out_debug),
-    .prbs_dac_data(prbs_dac_data)
+    .prbs_dac_data(prbs_dac_data),
+    .lfsr_state_debug(lfsr_state_debug)
 );
 
 // 时钟生成 - 625MHz的时钟周期为1.6ns
@@ -61,7 +63,7 @@ initial begin
     // 初始化
     reset_n = 0;
     prbs_mode_select = 1;  // 启用PRBS模式
-    prbs_pn_select_reg = 0; // 选择PN3序列
+    prbs_pn_select_reg = 0; // 选择PN5序列
     prbs_bit_rate_config_reg = 32'h10000000; // 位率设置 (约为625MHz/16)
     prbs_edge_time_config_reg = 8'd5; // 边沿过渡时间
     prbs_amplitude_config_reg = 16'h8000; // 满幅度

@@ -12,11 +12,12 @@ reg         reset_n;
 
 // 控制信号
 reg         lfsr_clk_enable;
-reg [3:0]   prbs_pn_select_reg;
+reg [4:0]   prbs_pn_select_reg; // 0:PN3, 1:PN5, 2:PN7, 3:PN9, 4:PN11, 5:PN13, 6:PN15, 7:PN17, 8:PN19, 9:PN21, 10:PN23, 11:PN25, 12:PN27, 13:PN29, 14:PN31
 
 // 输出信号
 wire        prbs_bit_out;
 wire        data_valid;
+wire [32:0] lfsr_state;     // LFSR寄存器状态，用于调试
 
 // 计数器和其他测试变量
 integer     i;
@@ -31,7 +32,8 @@ prbs_core_lfsr uut (
     .lfsr_clk_enable(lfsr_clk_enable),
     .prbs_pn_select_reg(prbs_pn_select_reg),
     .prbs_bit_out(prbs_bit_out),
-    .data_valid(data_valid)
+    .data_valid(data_valid),
+    .lfsr_state(lfsr_state)
 );
 
 // 时钟生成 - 625MHz的时钟周期为1.6ns
@@ -50,7 +52,7 @@ initial begin
     // 初始化
     reset_n = 0;
     lfsr_clk_enable = 0;
-    prbs_pn_select_reg = 0; // 选择PN3序列
+    prbs_pn_select_reg = 0; // 选择PN5序列
     bit_count = 0;
     one_count = 0;
     zero_count = 0;
@@ -60,9 +62,9 @@ initial begin
     reset_n = 1;
     #10;
     
-    // 测试PN3序列
-    $display("Testing PN3 sequence...");
-    prbs_pn_select_reg = 0;
+    // 测试PN5序列
+    $display("Testing PN5 sequence...");
+    prbs_pn_select_reg = 'd1;
     
     // 生成100个PRBS位
     for (i = 0; i < 100; i = i + 1) begin
@@ -79,36 +81,38 @@ initial begin
             zero_count = zero_count + 1;
         
         // 打印输出
-        $display("Bit %d: %b, Data Valid: %b", i, prbs_bit_out, data_valid);
+        $display("Bit %d: PRBS=%b, Data Valid=%b, LFSR State=%b (Decimal=%d)", 
+                 i, prbs_bit_out, data_valid, lfsr_state[4:0], lfsr_state[4:0]);
     end
     
     // 显示统计结果
-    $display("PN3 Statistics: Total bits: %d, Ones: %d, Zeros: %d", bit_count, one_count, zero_count);
+    $display("PN5 Statistics: Total bits: %d, Ones: %d, Zeros: %d", bit_count, one_count, zero_count);
     
-    // 测试PN7序列
-    bit_count = 0;
-    one_count = 0;
-    zero_count = 0;
-    $display("Testing PN7 sequence...");
-    prbs_pn_select_reg = 1;
+    // 观察PN5序列的完整周期
+    $display("\nObserving complete PN5 sequence cycle...");
+    $display("--------------------------------------------");
+    $display("Clock | LFSR State | PRBS Output | Data Valid");
+    $display("--------------------------------------------");
     
-    // 生成100个PRBS位
-    for (i = 0; i < 100; i = i + 1) begin
+    // 重置并观察PN5的完整周期（应为31个状态）
+    reset_n = 0;
+    #10;
+    reset_n = 1;
+    #10;
+    
+    // 生成35个时钟周期，足够观察PN5的完整周期
+    for (i = 0; i < 35; i = i + 1) begin
+        $display("%4d | %b (%3d) | %b | %b", 
+                 i, lfsr_state[4:0], lfsr_state[4:0], prbs_bit_out, data_valid);
+        
         lfsr_clk_enable = 1;
         #1.6; // 一个时钟周期
         lfsr_clk_enable = 0;
         #1.6; // 等待一个时钟周期
-        
-        // 统计输出
-        bit_count = bit_count + 1;
-        if (prbs_bit_out)
-            one_count = one_count + 1;
-        else
-            zero_count = zero_count + 1;
     end
     
-    // 显示统计结果
-    $display("PN7 Statistics: Total bits: %d, Ones: %d, Zeros: %d", bit_count, one_count, zero_count);
+    $display("--------------------------------------------");
+    $display("PN5 sequence cycle observation complete");
     
     // 结束仿真
     #10;
