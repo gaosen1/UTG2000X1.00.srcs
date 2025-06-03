@@ -42,13 +42,29 @@ assign edge_counter_dbg = edge_counter;
 always @(posedge dac_clk or negedge reset_n) begin
     if (!reset_n) begin
         prbs_bit_prev <= 1'b0;
-    end else if (lfsr_clk_enable) begin
+    end else begin
+        // 每个时钟周期都检查PRBS位变化，但保留对lfsr_clk_enable的感知
         prbs_bit_prev <= prbs_bit_out;
     end
 end
 
-wire prbs_rising_edge = lfsr_clk_enable && (prbs_bit_out && !prbs_bit_prev);
-wire prbs_falling_edge = lfsr_clk_enable && (!prbs_bit_out && prbs_bit_prev);
+// 检测边沿，使用两种检测方式
+wire prbs_bit_changed = prbs_bit_out != prbs_bit_prev;
+wire prbs_rising_edge = prbs_bit_out && !prbs_bit_prev;
+wire prbs_falling_edge = !prbs_bit_out && prbs_bit_prev;
+
+// 记录最近一次lfsr_clk_enable的状态
+reg lfsr_clk_enable_occurred;
+always @(posedge dac_clk or negedge reset_n) begin
+    if (!reset_n) begin
+        lfsr_clk_enable_occurred <= 1'b0;
+    end else begin
+        if (lfsr_clk_enable)
+            lfsr_clk_enable_occurred <= 1'b1;
+        else if (prbs_bit_changed)
+            lfsr_clk_enable_occurred <= 1'b0;
+    end
+end
 
 // 计算步长 - 使用移位代替除法以节省资源
 always @(*) begin
@@ -133,7 +149,8 @@ always @(*) begin
     case (current_state)
         S_STEADY_LOW: begin
             // 当检测到上升沿或PRBS为高时进入上升边沿状态
-            if (lfsr_clk_enable && prbs_bit_out == 1'b1) 
+            // 当出现上升沿，或者在lfsr_clk_enable后检测到高电平时转换
+            if (prbs_rising_edge || (lfsr_clk_enable_occurred && prbs_bit_out == 1'b1)) 
                 next_state = S_RISING_EDGE;
         end
         
@@ -141,7 +158,7 @@ always @(*) begin
             // 完成边沿过渡
             if (edge_counter >= prbs_edge_time_config_reg - 1) begin
                 // 检查是否需要立即开始下降
-                if (lfsr_clk_enable && prbs_bit_out == 1'b0)
+                if (prbs_falling_edge || (lfsr_clk_enable_occurred && prbs_bit_out == 1'b0))
                     next_state = S_FALLING_EDGE;
                 else
                     next_state = S_STEADY_HIGH;
@@ -150,7 +167,7 @@ always @(*) begin
         
         S_STEADY_HIGH: begin
             // 当检测到下降沿或PRBS为低时进入下降边沿状态
-            if (lfsr_clk_enable && prbs_bit_out == 1'b0)
+            if (prbs_falling_edge || (lfsr_clk_enable_occurred && prbs_bit_out == 1'b0))
                 next_state = S_FALLING_EDGE;
         end
         
@@ -158,7 +175,7 @@ always @(*) begin
             // 完成边沿过渡
             if (edge_counter >= prbs_edge_time_config_reg - 1) begin
                 // 检查是否需要立即开始上升
-                if (lfsr_clk_enable && prbs_bit_out == 1'b1)
+                if (prbs_rising_edge || (lfsr_clk_enable_occurred && prbs_bit_out == 1'b1))
                     next_state = S_RISING_EDGE;
                 else
                     next_state = S_STEADY_LOW;

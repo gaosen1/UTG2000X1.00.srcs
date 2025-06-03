@@ -1,0 +1,28 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Tue Jun  3 09:28:27 2025
+[*]
+[dumpfile] "/Users/gaosen/WORKSPACE/Z_HARDWARE/UTG2000X1.00.srcs/Mine/prbs_sim.vcd"
+[dumpfile_mtime] "Tue Jun  3 09:20:39 2025"
+[dumpfile_size] 5251173
+[savefile] "/Users/gaosen/WORKSPACE/Z_HARDWARE/UTG2000X1.00.srcs/Mine/prbs_sim.gtkw"
+[timestart] 0
+[size] 1336 600
+[pos] 28 32
+*-16.200001 109600 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[treeopen] prbs_generator_tb.
+[sst_width] 255
+[signals_width] 210
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+prbs_generator_tb.dac_clk
+prbs_generator_tb.prbs_bit_out_debug
+@8022
+prbs_generator_tb.prbs_dac_data[15:0]
+@820
+prbs_generator_tb.state_name[31:0]
+@25
+prbs_generator_tb.lfsr_state_debug[32:0]
+[pattern_trace] 1
+[pattern_trace] 0

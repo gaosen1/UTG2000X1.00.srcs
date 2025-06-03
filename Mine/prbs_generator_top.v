@@ -48,23 +48,28 @@ prbs_core_lfsr prbs_core (
     .lfsr_state(lfsr_state)
 );
 
-// 信号调制模块 - 将PRBS位转换为DAC数值
-// prbs_modulator modulator (
-//     .dac_clk(dac_clk),
-//     .reset_n(reset_n),
-//     .prbs_bit_in(prbs_bit_out),
-//     .edge_time_config(prbs_edge_time_config_reg),
-//     .amplitude_config(prbs_amplitude_config_reg),
-//     .dc_offset_config(prbs_dc_offset_config_reg),
-//     .dac_data_out(prbs_dac_data)
-// );
+// 边沿整形模块实例化 - 将PRBS位转换为带斜坡的DAC数值
+wire [15:0] shaped_prbs_data;  // 整形后的PRBS数据
+wire [1:0] edge_state_dbg;    // 边沿状态调试信号
+wire [7:0] edge_counter_dbg;  // 边沿计数器调试信号
+
+prbs_edge_shaper edge_shaper (
+    .dac_clk(dac_clk),
+    .reset_n(reset_n),
+    .prbs_bit_out(prbs_bit_out),
+    .lfsr_clk_enable(lfsr_clk_enable),
+    .prbs_edge_time_config_reg(prbs_edge_time_config_reg),
+    .shaped_prbs_data(shaped_prbs_data),
+    .edge_state_dbg(edge_state_dbg),
+    .edge_counter_dbg(edge_counter_dbg)
+);
 
 // 输出赋值
 assign prbs_valid = prbs_mode_select & data_valid;
 assign prbs_bit_out_debug = prbs_bit_out;
 assign lfsr_state_debug = lfsr_state;
 
-// 由于暂时注释掉了prbs_modulator，我们直接将prbs_bit_out扩展为DAC数据
-assign prbs_dac_data = prbs_bit_out ? 16'hFFFF : 16'h0000;
+// 将整形后的数据输出到DAC
+assign prbs_dac_data = prbs_mode_select ? shaped_prbs_data : 16'h0000;
 
 endmodule
