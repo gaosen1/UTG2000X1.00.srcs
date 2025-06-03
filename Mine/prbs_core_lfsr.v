@@ -40,8 +40,8 @@ initial begin
     lfsr_reg = {{(MAX_PN_ORDER-1){1'b0}}, 1'b1}; // 默认种子，不能为全0
     prbs_bit_out = 1'b0;
     data_valid = 1'b0;
-    bit_counter = 16'd0;
-    sequence_length = 16'd0;
+    bit_counter = 32'd0;
+    sequence_length = 32'd0;
 end
 
 // 主要LFSR逻辑
@@ -105,7 +105,7 @@ always @(posedge dac_clk or negedge reset_n) begin
         endcase
         
         // 输出LFSR的最高位作为PRBS输出
-        prbs_bit_out <= lfsr_reg[MAX_PN_ORDER-1];
+        prbs_bit_out <= lfsr_reg[0];
         
         // 位计数器逻辑，用于生成data_valid信号
         if (bit_counter >= sequence_length - 1) begin
@@ -136,15 +136,15 @@ always @(*) begin
             sequence_length = 32'd127; // 2^7 - 1 = 127
         end
         5'd3: begin // PN9: x^9 + x^4 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-9){1'b0}}, 9'b100001000}; // 位4和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-9){1'b0}}, 9'b000100001}; // 位4和位0反馈
             sequence_length = 32'd511; // 2^9 - 1 = 511
         end
         5'd4: begin // PN11: x^11 + x^2 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-11){1'b0}}, 11'b10000000010}; // 位2和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-11){1'b0}}, 11'b01000000001}; // 位2和位0反馈
             sequence_length = 32'd2047; // 2^11 - 1 = 2047
         end
         5'd5: begin // PN13: x^13 + x^4 + x^3 + x + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-13){1'b0}}, 13'b1000000001101}; // 位4、位3、位1和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-13){1'b0}}, 13'b1011000000001}; // 位4、位3、位1和位0反馈
             sequence_length = 32'd8191; // 2^13 - 1 = 8191
         end
         5'd6: begin // PN15: x^15 + x + 1 (本原多项式)
@@ -152,23 +152,23 @@ always @(*) begin
             sequence_length = 32'd32767; // 2^15 - 1 = 32767
         end
         5'd7: begin // PN17: x^17 + x^3 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-17){1'b0}}, 17'b10000000000000100}; // 位3和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-17){1'b0}}, 17'b00100000000000001}; // 位3和位0反馈
             sequence_length = 32'd131071; // 2^17 - 1 = 131071
         end
         5'd8: begin // PN19: x^19 + x^5 + x^2 + x + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-19){1'b0}}, 19'b1000000000000010011}; // 位5、位2、位1和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-19){1'b0}}, 19'b1100100000000000001}; // 位5、位2、位1和位0反馈
             sequence_length = 32'd524287; // 2^19 - 1 = 524287
         end
         5'd9: begin // PN21: x^21 + x^2 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-21){1'b0}}, 21'b100000000000000000100}; // 位2和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-21){1'b0}}, 21'b010000000000000000001}; // 位2和位0反馈
             sequence_length = 32'd2097151; // 2^21 - 1 = 2097151
         end
         5'd10: begin // PN23: x^23 + x^5 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-23){1'b0}}, 23'b10000000000000000010000}; // 位5和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-23){1'b0}}, 23'b00001000000000000000001}; // 位5和位0反馈
             sequence_length = 32'd8388607; // 2^23 - 1 = 8388607
         end
         5'd11: begin // PN25: x^25 + x^3 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-25){1'b0}}, 25'b1000000000000000000000100}; // 位3和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-25){1'b0}}, 25'b0010000000000000000000001}; // 位3和位0反馈
             sequence_length = 32'd33554431; // 2^25 - 1 = 33554431
         end
         5'd12: begin // PN27: x^27 + x^5 + x^2 + x + 1 (本原多项式)
