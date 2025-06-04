@@ -32,15 +32,49 @@ integer     i;
 integer     bit_count;
 integer     sequence_count;
 
+// 新增信号用于连接 CHANNEL_REG_CONFIG 和 prbs_generator_top
+reg         CH_LOAD_PROTECT_tb; // 输入到 CHANNEL_REG_CONFIG
+wire        CH_LOAD_PROTECT_STATE_from_config;
+wire [3:0]  prbs_pn_select_from_config;
+wire [31:0] prbs_bit_rate_from_config;
+wire [7:0]  prbs_edge_time_from_config;
+wire [15:0] prbs_amplitude_from_config; // 可选，用于调试 CHANNEL_REG_CONFIG 输出
+wire [15:0] prbs_dc_offset_from_config; // 可选，用于调试 CHANNEL_REG_CONFIG 输出
+
+// CHANNEL_REG_CONFIG 模块实例化
+CHANNEL_REG_CONFIG u_channel_reg_config (
+    .CLK_LOW(CLK_LOW),
+    .reset_n(reset_n),
+    .CH_LOAD_PROTECT(CH_LOAD_PROTECT_tb), // 从 testbench reg 控制
+    .CH_CONFIG_WE(CH_CONFIG_WE),
+    .CH_CONFIG_ADDR(CH_CONFIG_ADDR),
+    .CH_CONFIG_DATA(CH_CONFIG_DATA),
+
+    // 输出连接到 prbs_generator_top 的输入或 testbench wires
+    .CH_LOAD_PROTECT_STATE(CH_LOAD_PROTECT_STATE_from_config),
+    .prbs_pn_select_reg(prbs_pn_select_from_config),
+    .prbs_bit_rate_config_reg(prbs_bit_rate_from_config),
+    .prbs_edge_time_config_reg(prbs_edge_time_from_config),
+    .prbs_amplitude_config_reg(prbs_amplitude_from_config),     // 可连接用于调试
+    .prbs_dc_offset_config_reg(prbs_dc_offset_from_config),   // 可连接用于调试
+
+    // DDS 相关输出，在当前 PRBS 设计中未使用，可以悬空
+    .STAND_FREQ_INC(),
+    .CH_ON_OFF(),
+    .CH_CNT_ATTEN()
+);
+
 // 被测试模块实例化
 prbs_generator_top uut (
     .dac_clk(dac_clk),
     .reset_n(reset_n),
-    .CLK_LOW(CLK_LOW),
-    .CH_CONFIG_WE(CH_CONFIG_WE),
-    .CH_CONFIG_ADDR(CH_CONFIG_ADDR),
-    .CH_CONFIG_DATA(CH_CONFIG_DATA),
-    .CH_LOAD_PROTECT_STATE(),
+    // CLK_LOW, CH_CONFIG_WE, CH_CONFIG_ADDR, CH_CONFIG_DATA are now for u_channel_reg_config
+    .CH_LOAD_PROTECT_STATE(CH_LOAD_PROTECT_STATE_from_config), // 从 u_channel_reg_config 获取
+    // 新的配置输入
+    .prbs_pn_select_in(prbs_pn_select_from_config),
+    .prbs_bit_rate_config_in(prbs_bit_rate_from_config),
+    .prbs_edge_time_config_in(prbs_edge_time_from_config),
+
     .prbs_valid(prbs_valid),
     .prbs_bit_out_debug(prbs_bit_out_debug),
     .prbs_dac_data(prbs_dac_data),
@@ -70,6 +104,7 @@ end
 initial begin
     // 初始化
     reset_n = 0;
+    CH_LOAD_PROTECT_tb = 1'b0; // 默认不使能负载保护 (active high input to CH_REG_CONFIG)
     bit_count = 0;
     sequence_count = 0;
     

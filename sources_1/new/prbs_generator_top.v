@@ -7,11 +7,11 @@
 module prbs_generator_top (
     input wire          dac_clk,                // 主DAC时钟，例如 625MHz
     input wire          reset_n,                // 同步低有效复位
-    input wire          CLK_LOW,                // 配置时钟
-    input wire          CH_CONFIG_WE,           // 配置写使能
-    input wire [7:0]    CH_CONFIG_ADDR,         // 配置地址
-    input wire [7:0]    CH_CONFIG_DATA,         // 配置数据
-    output wire         CH_LOAD_PROTECT_STATE,  // 通道保护状态
+    input wire          CH_LOAD_PROTECT_STATE,  // 通道保护状态
+    // Configuration inputs (previously from internal CHANNEL_REG_CONFIG)
+    input wire [3:0]    prbs_pn_select_in,
+    input wire [31:0]   prbs_bit_rate_config_in,
+    input wire [7:0]    prbs_edge_time_config_in,
     
     // 输出信号
     output wire         prbs_valid,             // PRBS数据有效标志
@@ -26,34 +26,14 @@ wire        prbs_bit_out;     // 原始PRBS位输出
 wire        data_valid;       // 数据有效标志
 wire [32:0] lfsr_state;       // LFSR寄存器状态，用于调试
 
-// CHANNEL_REG_CONFIG 模块实例化
-wire [4:0]    prbs_pn_select_reg;     // PN阶数选择
-wire [31:0]   prbs_bit_rate_config_reg; // 位率NCO相位增量值
-wire [7:0]    prbs_edge_time_config_reg; // 边沿过渡DAC周期数
-wire [15:0]   prbs_amplitude_config_reg; // 幅度数字增益因子
-wire [15:0]   prbs_dc_offset_config_reg; // 直流偏置数字值
-
-CHANNEL_REG_CONFIG channel_config (
-    .CLK_LOW(CLK_LOW),
-    .reset_n(reset_n),
-    .CH_CONFIG_WE(CH_CONFIG_WE),
-    .CH_CONFIG_ADDR(CH_CONFIG_ADDR),
-    .CH_CONFIG_DATA(CH_CONFIG_DATA),
-    .CH_LOAD_PROTECT_STATE(CH_LOAD_PROTECT_STATE),
-    .CH_ON_OFF(),  // 未使用
-    .CH_CNT_ATTEN(), // 未使用
-    .prbs_pn_select_reg(prbs_pn_select_reg),
-    .prbs_bit_rate_config_reg(prbs_bit_rate_config_reg),
-    .prbs_edge_time_config_reg(prbs_edge_time_config_reg),
-    .prbs_amplitude_config_reg(prbs_amplitude_config_reg),
-    .prbs_dc_offset_config_reg(prbs_dc_offset_config_reg)
-);
+// CHANNEL_REG_CONFIG module is now instantiated externally.
+// Configuration values are provided as inputs to this top module.
 
 // 位率时钟生成模块实例化
 prbs_bitrate_clk_gen bitrate_gen (
     .dac_clk(dac_clk),
     .reset_n(reset_n),
-    .prbs_bit_rate_config_reg(prbs_bit_rate_config_reg),
+    .prbs_bit_rate_config_reg(prbs_bit_rate_config_in),
     .lfsr_clk_enable(lfsr_clk_enable)
 );
 
@@ -62,7 +42,7 @@ prbs_core_lfsr prbs_core (
     .dac_clk(dac_clk),
     .reset_n(reset_n),
     .lfsr_clk_enable(lfsr_clk_enable),
-    .prbs_pn_select_reg(prbs_pn_select_reg),
+    .prbs_pn_select_reg(prbs_pn_select_in),
     .prbs_bit_out(prbs_bit_out),
     .data_valid(data_valid),
     .lfsr_state(lfsr_state)
@@ -78,7 +58,7 @@ prbs_edge_shaper edge_shaper (
     .reset_n(reset_n),
     .prbs_bit_out(prbs_bit_out),
     .lfsr_clk_enable(lfsr_clk_enable),
-    .prbs_edge_time_config_reg(prbs_edge_time_config_reg),
+    .prbs_edge_time_config_reg(prbs_edge_time_config_in),
     .shaped_prbs_data(shaped_prbs_data),
     .edge_state_dbg(edge_state_dbg),
     .edge_counter_dbg(edge_counter_dbg)
@@ -91,5 +71,8 @@ assign lfsr_state_debug = lfsr_state;
 
 // 将整形后的数据输出到DAC
 assign prbs_dac_data = shaped_prbs_data;
+
+// 当通道保护激活时，DAC 输出置零
+// assign prbs_dac_data = CH_LOAD_PROTECT_STATE ? 16'h0000 : shaped_prbs_data;
 
 endmodule

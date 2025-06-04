@@ -172,6 +172,19 @@ wire   [47:0]CH2_STAND_FREQ_INC;
 wire   CH1_SYNC;
 wire   CH2_SYNC;
 
+// PRBS generator configuration outputs (from CHANNEL_REG_CONFIG)
+wire [3:0] CH1_prbs_pn_select_reg;
+wire [31:0] CH1_prbs_bit_rate_config_reg;
+wire [7:0] CH1_prbs_edge_time_config_reg;
+wire [15:0] CH1_prbs_amplitude_config_reg;
+wire [15:0] CH1_prbs_dc_offset_config_reg;
+
+wire [3:0] CH2_prbs_pn_select_reg;
+wire [31:0] CH2_prbs_bit_rate_config_reg;
+wire [7:0] CH2_prbs_edge_time_config_reg;
+wire [15:0] CH2_prbs_amplitude_config_reg;
+wire [15:0] CH2_prbs_dc_offset_config_reg;
+
 assign      FPGA_SYS_WORK    =  ~PLL_LOCKED;
 assign      PLL_REFCLK_SEL   =  EXT_CLK_VALID;
 assign      PLL_HOLD_OVER    =  1'b1;
@@ -283,7 +296,12 @@ CHANNEL_REG_CONFIG u0_CHANNEL_REG_CONFIG(
                 .CH_LOAD_PROTECT_STATE ( CH1_LOAD_PROTECT_STATE ),
                 .STAND_FREQ_INC        ( CH1_STAND_FREQ_INC     ),
                 .CH_ON_OFF             ( CH1_ON_OFF             ),
-                .CH_CNT_ATTEN          ( CH1_CNT_ATTEN          )
+                .CH_CNT_ATTEN          ( CH1_CNT_ATTEN          ),
+                .prbs_pn_select_reg    ( CH1_prbs_pn_select_reg    ),
+                .prbs_bit_rate_config_reg( CH1_prbs_bit_rate_config_reg ),
+                .prbs_edge_time_config_reg( CH1_prbs_edge_time_config_reg ),
+                .prbs_amplitude_config_reg( CH1_prbs_amplitude_config_reg ),
+                .prbs_dc_offset_config_reg( CH1_prbs_dc_offset_config_reg )
 );
 
 CHANNEL_REG_CONFIG u1_CHANNEL_REG_CONFIG(
@@ -295,7 +313,12 @@ CHANNEL_REG_CONFIG u1_CHANNEL_REG_CONFIG(
                 .CH_LOAD_PROTECT_STATE ( CH2_LOAD_PROTECT_STATE ),
                 .STAND_FREQ_INC        ( CH2_STAND_FREQ_INC     ),
                 .CH_ON_OFF             ( CH2_ON_OFF             ),
-                .CH_CNT_ATTEN          ( CH2_CNT_ATTEN          )
+                .CH_CNT_ATTEN          ( CH2_CNT_ATTEN          ),
+                .prbs_pn_select_reg    ( CH2_prbs_pn_select_reg    ),
+                .prbs_bit_rate_config_reg( CH2_prbs_bit_rate_config_reg ),
+                .prbs_edge_time_config_reg( CH2_prbs_edge_time_config_reg ),
+                .prbs_amplitude_config_reg( CH2_prbs_amplitude_config_reg ),
+                .prbs_dc_offset_config_reg( CH2_prbs_dc_offset_config_reg )
 );
 
     
@@ -325,52 +348,31 @@ SHARE_CONFIG_REG u_SHARE_CONFIG_REG(
                 .DAC124_CONFIG_DATA     ( DAC124_CONFIG_DATA     )
 );
 
-/*
-//-----------------------------------------------------------正弦波生成
-dds_compiler_0 dds_compiler_i (
-                .aclk                   ( CLK_HIGH               ),  
-                .aclken                 ( CH1_ON_OFF             ),  
-                .aresetn                ( CH1_SYNC               ),  
-                .s_axis_config_tvalid   ( 1'b1                   ),  
-                .s_axis_config_tdata    ( CH1_STAND_FREQ_INC     ),  
-                .m_axis_data_tvalid     (                        ),  
-                .m_axis_data_tdata      ( DATA1_TO_DACm          )   
+prbs_generator_top prbs_gen_ch1 (
+    .dac_clk(CLK_HIGH),
+    .reset_n(1'b1),             // external reset logic or global
+    .CH_LOAD_PROTECT_STATE(CH1_LOAD_PROTECT_STATE),
+    .prbs_pn_select_in(CH1_prbs_pn_select_reg),
+    .prbs_bit_rate_config_in(CH1_prbs_bit_rate_config_reg),
+    .prbs_edge_time_config_in(CH1_prbs_edge_time_config_reg),
+    .prbs_valid(),
+    .prbs_bit_out_debug(),
+    .prbs_dac_data(DATA1_TO_DACm),
+    .lfsr_state_debug()
 );
 
-dds_compiler_0 dds_compiler_q (
-                .aclk                   ( CLK_HIGH               ), 
-                .aclken                 ( CH1_ON_OFF             ), 
-                .aresetn                ( CH2_SYNC               ), 
-                .s_axis_config_tvalid   ( 1'b1                   ), 
-                .s_axis_config_tdata    ( CH2_STAND_FREQ_INC     ), 
-                .m_axis_data_tvalid     (                        ), 
-                .m_axis_data_tdata      ( DATA2_TO_DACm          )  
+prbs_generator_top prbs_gen_ch2 (
+    .dac_clk(CLK_HIGH),
+    .reset_n(1'b1),
+    .CH_LOAD_PROTECT_STATE(CH2_LOAD_PROTECT_STATE),
+    .prbs_pn_select_in(CH2_prbs_pn_select_reg),
+    .prbs_bit_rate_config_in(CH2_prbs_bit_rate_config_reg),
+    .prbs_edge_time_config_in(CH2_prbs_edge_time_config_reg),
+    .prbs_valid(),
+    .prbs_bit_out_debug(),
+    .prbs_dac_data(DATA2_TO_DACm),
+    .lfsr_state_debug()
 );
-*/
-
-// 添加PN3生成器模块
-// 声明PN3输出信号
-wire pn_data_out_ch1;
-wire data_valid_ch1;
-wire [2:0] pn_seed_ch1;
-
-// 实例化通道1的PN3生成器
-PN3_Generator pn3_generator_ch1 (
-    .clk                    ( CLK_HIGH               ),
-    .rst_n                  ( 1'b1                   ),
-    .enable                 ( 1'b1                   ),
-    .rate_div               ( 32'd1                  ),
-    .pn_data_out            ( pn_data_out_ch1        ),
-    .data_valid             ( data_valid_ch1         ),
-    .pn_seed                ( pn_seed_ch1            )
-);
-
-// 将PN3输出转换为DAC格式
-// 注意：这里将单比特PN序列扩展为DAC所需的多位数据
-// 假设 DATA1_TO_DACm和DATA2_TO_DACm是16位宽
-assign DATA1_TO_DACm = pn_data_out_ch1 ? 16'h7FFF : 16'h8000; // 1->最大正值，0->最小负值
-assign DATA2_TO_DACm = pn_data_out_ch1 ? 16'h7FFF : 16'h8000; // 使用相同的输出
-
 
 //---------------------------------数据转换输出
 DAC_ODDR_OUT   u_DAC_ODDR_OUT(
