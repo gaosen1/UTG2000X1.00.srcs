@@ -7,14 +7,11 @@
 module prbs_generator_top (
     input wire          dac_clk,                // 主DAC时钟，例如 625MHz
     input wire          reset_n,                // 同步低有效复位
-    
-    // 来自CHANNEL_REG_CONFIG的配置寄存器
-    input wire          prbs_mode_select,       // 0: DDS, 1: PRBS
-    input wire [4:0]    prbs_pn_select_reg,     // PN阶数选择 (0:PN3, 1:PN5, 2:PN7, 3:PN9, 4:PN11, 5:PN15, 6:PN17, 7:PN23, 8:PN31, 9:PN13, 10:PN19, 11:PN21, 12:PN25, 13:PN27, 14:PN29)
-    input wire [31:0]   prbs_bit_rate_config_reg,// 位率NCO相位增量值
-    input wire [7:0]    prbs_edge_time_config_reg,// 边沿过渡DAC周期数
-    input wire [15:0]   prbs_amplitude_config_reg,// 幅度数字增益因子
-    input wire [15:0]   prbs_dc_offset_config_reg,// 直流偏置数字值
+    input wire          CLK_LOW,                // 配置时钟
+    input wire          CH_CONFIG_WE,           // 配置写使能
+    input wire [7:0]    CH_CONFIG_ADDR,         // 配置地址
+    input wire [7:0]    CH_CONFIG_DATA,         // 配置数据
+    output wire         CH_LOAD_PROTECT_STATE,  // 通道保护状态
     
     // 输出信号
     output wire         prbs_valid,             // PRBS数据有效标志
@@ -28,6 +25,29 @@ wire        lfsr_clk_enable;  // 位率时钟使能信号
 wire        prbs_bit_out;     // 原始PRBS位输出
 wire        data_valid;       // 数据有效标志
 wire [32:0] lfsr_state;       // LFSR寄存器状态，用于调试
+
+// CHANNEL_REG_CONFIG 模块实例化
+wire [4:0]    prbs_pn_select_reg;     // PN阶数选择
+wire [31:0]   prbs_bit_rate_config_reg; // 位率NCO相位增量值
+wire [7:0]    prbs_edge_time_config_reg; // 边沿过渡DAC周期数
+wire [15:0]   prbs_amplitude_config_reg; // 幅度数字增益因子
+wire [15:0]   prbs_dc_offset_config_reg; // 直流偏置数字值
+
+CHANNEL_REG_CONFIG channel_config (
+    .CLK_LOW(CLK_LOW),
+    .reset_n(reset_n),
+    .CH_CONFIG_WE(CH_CONFIG_WE),
+    .CH_CONFIG_ADDR(CH_CONFIG_ADDR),
+    .CH_CONFIG_DATA(CH_CONFIG_DATA),
+    .CH_LOAD_PROTECT_STATE(CH_LOAD_PROTECT_STATE),
+    .CH_ON_OFF(),  // 未使用
+    .CH_CNT_ATTEN(), // 未使用
+    .prbs_pn_select_reg(prbs_pn_select_reg),
+    .prbs_bit_rate_config_reg(prbs_bit_rate_config_reg),
+    .prbs_edge_time_config_reg(prbs_edge_time_config_reg),
+    .prbs_amplitude_config_reg(prbs_amplitude_config_reg),
+    .prbs_dc_offset_config_reg(prbs_dc_offset_config_reg)
+);
 
 // 位率时钟生成模块实例化
 prbs_bitrate_clk_gen bitrate_gen (
@@ -65,11 +85,11 @@ prbs_edge_shaper edge_shaper (
 );
 
 // 输出赋值
-assign prbs_valid = prbs_mode_select & data_valid;
+assign prbs_valid = data_valid;
 assign prbs_bit_out_debug = prbs_bit_out;
 assign lfsr_state_debug = lfsr_state;
 
 // 将整形后的数据输出到DAC
-assign prbs_dac_data = prbs_mode_select ? shaped_prbs_data : 16'h0000;
+assign prbs_dac_data = shaped_prbs_data;
 
 endmodule

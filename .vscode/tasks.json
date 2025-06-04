@@ -4,7 +4,7 @@
         {
             "label": "仿真 顶层模块 波形",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/Mine && iverilog -o prbs_sim.vvp prbs_generator_tb.v prbs_generator_top.v prbs_bitrate_clk_gen.v prbs_core_lfsr.v prbs_edge_shaper.v && vvp prbs_sim.vvp && gtkwave -a prbs_sim.gtkw prbs_sim.vcd",
+            "command": "cd ${workspaceFolder}/Mine && iverilog -o prbs_sim.vvp prbs_generator_tb.v prbs_generator_top.v prbs_bitrate_clk_gen.v prbs_core_lfsr.v prbs_edge_shaper.v CHANNEL_REG_CONFIG.v && vvp prbs_sim.vvp && gtkwave -a prbs_sim.gtkw prbs_sim.vcd",
             "group": "test",
             "presentation": {
                 "reveal": "always",

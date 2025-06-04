@@ -172,15 +172,15 @@ always @(*) begin
             sequence_length = 32'd33554431; // 2^25 - 1 = 33554431
         end
         5'd12: begin // PN27: x^27 + x^5 + x^2 + x + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-27){1'b0}}, 27'b100000000000000000000010011}; // 位5、位2、位1和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-27){1'b0}}, 27'b110010000000000000000000001}; // 位5、位2、位1和位0反馈
             sequence_length = 32'd134217727; // 2^27 - 1 = 134217727
         end
         5'd13: begin // PN29: x^29 + x^2 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-29){1'b0}}, 29'b10000000000000000000000000010}; // 位2和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-29){1'b0}}, 29'b01000000000000000000000000001}; // 位2和位0反馈
             sequence_length = 32'd536870911; // 2^29 - 1 = 536870911
         end
         5'd14: begin // PN31: x^31 + x^3 + 1 (本原多项式)
-            feedback_mask = {{(MAX_PN_ORDER-31){1'b0}}, 31'b1000000000000000000000000000100}; // 位3和位0反馈
+            feedback_mask = {{(MAX_PN_ORDER-31){1'b0}}, 31'b0010000000000000000000000000001}; // 位3和位0反馈
             sequence_length = 32'd2147483647; // 2^31 - 1 = 2147483647
         end
         default: begin // 默认使用PN3
