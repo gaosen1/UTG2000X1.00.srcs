@@ -86,9 +86,9 @@ begin
         // 8'h06:  stand_freq_inc_reg[31:24]      <=  CH_CONFIG_DATA;
         // 8'h07:  stand_freq_inc_reg[39:32]      <=  CH_CONFIG_DATA;
         // 8'h08:  begin stand_freq_inc_reg[47:40]       <=  CH_CONFIG_DATA; freq_updata  <=  1'b1; end
-        // 8'h2D:  ch_on_off_reg                  <=  CH_CONFIG_DATA[0];
-        // 8'h31:  CH_CNT_ATTEN                   <=  CH_CONFIG_DATA[3:0];
-        // 8'h5A:  CH_LOAD_PROTECT_CLR            <=  CH_CONFIG_DATA[0];
+        8'h2D:  ch_on_off_reg                  <=  CH_CONFIG_DATA[0];
+        8'h31:  CH_CNT_ATTEN                   <=  CH_CONFIG_DATA[3:0];
+        8'h5A:  CH_LOAD_PROTECT_CLR            <=  CH_CONFIG_DATA[0];
         
         // PRBS相关寄存器
         ADDR_PN_ORDER:          prbs_pn_select_reg <= CH_CONFIG_DATA[3:0]; // PN阶数是4位
@@ -179,24 +179,24 @@ always @(posedge CLK_LOW or negedge reset_n) begin
 end
 
 // 初始化PRBS相关寄存器
-always @(posedge CLK_LOW or negedge reset_n) begin
-    if (!reset_n) begin
-        prbs_config_update <= 1'b0;
-        prbs_pn_select_reg <= 4'h0;
-        prbs_bit_rate_config_reg <= 32'h02000000; // 位率设置 (总时钟的1/64)
-        prbs_edge_time_config_reg <= 8'h0;
-        prbs_amplitude_config_reg <= 16'h0;
-        prbs_dc_offset_config_reg <= 16'h0;
+// always @(posedge CLK_LOW or negedge reset_n) begin
+//     if (!reset_n) begin
+//         prbs_config_update <= 1'b0;
+//         prbs_pn_select_reg <= 4'h0;
+//         prbs_bit_rate_config_reg <= 32'h02000000; // 位率设置 (总时钟的1/64)
+//         prbs_edge_time_config_reg <= 8'h0;
+//         prbs_amplitude_config_reg <= 16'h0;
+//         prbs_dc_offset_config_reg <= 16'h0;
         
-        prbs_bit_rate_bytes[0] <= 8'h0;
-        prbs_bit_rate_bytes[1] <= 8'h0;
-        prbs_bit_rate_bytes[2] <= 8'h0;
-        prbs_bit_rate_bytes[3] <= 8'h0;
-        prbs_amplitude_bytes[0] <= 8'h0;
-        prbs_amplitude_bytes[1] <= 8'h0;
-        prbs_dc_offset_bytes[0] <= 8'h0;
-        prbs_dc_offset_bytes[1] <= 8'h0;
-    end
-end
+//         prbs_bit_rate_bytes[0] <= 8'h0;
+//         prbs_bit_rate_bytes[1] <= 8'h0;
+//         prbs_bit_rate_bytes[2] <= 8'h0;
+//         prbs_bit_rate_bytes[3] <= 8'h0;
+//         prbs_amplitude_bytes[0] <= 8'h0;
+//         prbs_amplitude_bytes[1] <= 8'h0;
+//         prbs_dc_offset_bytes[0] <= 8'h0;
+//         prbs_dc_offset_bytes[1] <= 8'h0;
+//     end
+// end
 
 endmodule

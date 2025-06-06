@@ -10,6 +10,7 @@ module prbs_edge_shaper (
     input wire          prbs_bit_out,             // 1位原始PRBS序列 (来自 prbs_core_lfsr)
     input wire          lfsr_clk_enable,          // PRBS移位使能 (指示 prbs_bit_out 可能变化)
     input wire [7:0]    prbs_edge_time_config_reg,// 边沿过渡DAC周期数 (Nedge_cycles)
+    input wire [1:0]    filter_strength,          // 滤波器强度控制 (0=不滤波, 1=弱, 2=中, 3=强)
     
     output reg  [15:0]  shaped_prbs_data,         // 16位整形后的PRBS数据
     output wire [1:0]   edge_state_dbg,           // 输出当前状态(调试用)
@@ -33,6 +34,10 @@ reg [7:0] edge_counter;          // 计数边沿过渡周期
 reg [15:0] current_dac_value;    // 当前DAC输出值
 reg [15:0] step_size;            // 每步的数字增量/减量
 reg prbs_bit_prev;               // 前一个PRBS位值
+
+// 滤波器寄存器 - 移动平均滤波器
+reg [15:0] filter_buffer [0:3];  // 4点移动平均缓冲区
+reg [15:0] filtered_value;       // 滤波后的值
 
 // 输出调试信号
 assign edge_state_dbg = current_state;
@@ -66,29 +71,20 @@ always @(posedge dac_clk or negedge reset_n) begin
     end
 end
 
-// 计算步长 - 使用移位代替除法以节省资源
+// 计算步长 - 优化为更精确的计算，确保均匀过渡
 always @(*) begin
-    if (prbs_edge_time_config_reg == 8'd0) begin
+    if (prbs_edge_time_config_reg == 8'd0 || prbs_edge_time_config_reg == 8'd1) begin
         step_size = DAC_MAX;  // 设置为最大值，实现瞬时跳变
-    end else if (prbs_edge_time_config_reg == 8'd1) begin
-        step_size = DAC_MAX;  // 只需1个周期，直接跳到最大值
-    end else if (prbs_edge_time_config_reg == 8'd2) begin
-        step_size = DAC_MAX >> 1;  // 最大值的一半
-    end else if (prbs_edge_time_config_reg == 8'd4) begin
-        step_size = DAC_MAX >> 2;  // 最大值的四分之一
-    end else if (prbs_edge_time_config_reg == 8'd8) begin
-        step_size = DAC_MAX >> 3;  // 最大值的八分之一
-    end else if (prbs_edge_time_config_reg == 8'd16) begin
-        step_size = DAC_MAX >> 4;  // 最大值的十六分之一
-    end else if (prbs_edge_time_config_reg == 8'd32) begin
-        step_size = DAC_MAX >> 5;  // 最大值的三十二分之一
-    end else if (prbs_edge_time_config_reg == 8'd64) begin
-        step_size = DAC_MAX >> 6;  // 最大值的六十四分之一
-    end else if (prbs_edge_time_config_reg == 8'd128) begin
-        step_size = DAC_MAX >> 7;  // 最大值的一百二十八分之一
     end else begin
-        // 对于非2的幂次，使用近似值
-        step_size = (DAC_MAX + (prbs_edge_time_config_reg >> 1)) / prbs_edge_time_config_reg;
+        // 精确计算步长，避免累积误差
+        // 使用乘法和除法确保均匀分布，对于FPGA综合工具会优化为常数
+        step_size = DAC_MAX / prbs_edge_time_config_reg;
+        
+        // 如果不能整除，稍微调整步长以确保最后一步正好达到目标值
+        if ((DAC_MAX % prbs_edge_time_config_reg) != 0) begin
+            // 步长略微调大，确保不会超过总周期数
+            step_size = step_size + 1;
+        end
     end
 end
 
@@ -98,6 +94,13 @@ always @(posedge dac_clk or negedge reset_n) begin
         current_state <= S_STEADY_LOW;
         edge_counter <= 8'h0;
         current_dac_value <= DAC_MIN;
+        
+        // 初始化滤波器缓冲区
+        filter_buffer[0] <= DAC_MIN;
+        filter_buffer[1] <= DAC_MIN;
+        filter_buffer[2] <= DAC_MIN;
+        filter_buffer[3] <= DAC_MIN;
+        filtered_value <= DAC_MIN;
         shaped_prbs_data <= DAC_MIN;
     end else begin
         current_state <= next_state;
@@ -112,11 +115,19 @@ always @(posedge dac_clk or negedge reset_n) begin
             S_RISING_EDGE: begin
                 edge_counter <= edge_counter + 8'h1;
                 
-                // 防止溢出
-                if (current_dac_value + step_size > DAC_MAX || edge_counter >= prbs_edge_time_config_reg - 1) begin
+                // 优化边界条件处理
+                if (edge_counter >= prbs_edge_time_config_reg - 1) begin
+                    // 最后一个周期，确保精确到达最大值
                     current_dac_value <= DAC_MAX;
                 end else begin
-                    current_dac_value <= current_dac_value + step_size;
+                    // 计算当前应达到的精确值，避免累积误差
+                    // 对于每个时钟周期，我们计算应该达到的精确值
+                    current_dac_value <= DAC_MIN + ((edge_counter + 1) * step_size);
+                    
+                    // 防止溢出
+                    if (current_dac_value > DAC_MAX) begin
+                        current_dac_value <= DAC_MAX;
+                    end
                 end
             end
             
@@ -128,17 +139,51 @@ always @(posedge dac_clk or negedge reset_n) begin
             S_FALLING_EDGE: begin
                 edge_counter <= edge_counter + 8'h1;
                 
-                // 防止下溢
-                if (current_dac_value < step_size || edge_counter >= prbs_edge_time_config_reg - 1) begin
+                // 优化边界条件处理
+                if (edge_counter >= prbs_edge_time_config_reg - 1) begin
+                    // 最后一个周期，确保精确到达最小值
                     current_dac_value <= DAC_MIN;
                 end else begin
-                    current_dac_value <= current_dac_value - step_size;
+                    // 计算当前应达到的精确值，避免累积误差
+                    // 对于每个时钟周期，我们计算应该达到的精确值
+                    current_dac_value <= DAC_MAX - ((edge_counter + 1) * step_size);
+                    
+                    // 防止下溢
+                    if (current_dac_value > DAC_MAX) begin  // 检查下溢（无符号数下溢会变成很大的值）
+                        current_dac_value <= DAC_MIN;
+                    end
                 end
             end
         endcase
         
+        // 移动平均滤波器实现
+        filter_buffer[0] <= filter_buffer[1];
+        filter_buffer[1] <= filter_buffer[2];
+        filter_buffer[2] <= filter_buffer[3];
+        filter_buffer[3] <= current_dac_value;
+        
+        // 根据滤波强度选择不同的滤波算法
+        case (filter_strength)
+            2'b00: begin
+                // 不滤波
+                filtered_value <= current_dac_value;
+            end
+            2'b01: begin
+                // 弱滤波 - 最近两个值的平均
+                filtered_value <= (filter_buffer[3] + filter_buffer[2]) >> 1;
+            end
+            2'b10: begin
+                // 中等滤波 - 最近三个值的平均
+                filtered_value <= (filter_buffer[3] + filter_buffer[2] + filter_buffer[1]) / 3;
+            end
+            2'b11: begin
+                // 强滤波 - 四点移动平均
+                filtered_value <= (filter_buffer[3] + filter_buffer[2] + filter_buffer[1] + filter_buffer[0]) >> 2;
+            end
+        endcase
+        
         // 更新输出
-        shaped_prbs_data <= current_dac_value;
+        shaped_prbs_data <= filtered_value;
     end
 end
 

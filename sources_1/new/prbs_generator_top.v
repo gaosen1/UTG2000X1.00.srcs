@@ -12,6 +12,7 @@ module prbs_generator_top (
     input wire [3:0]    prbs_pn_select_in,
     input wire [31:0]   prbs_bit_rate_config_in,
     input wire [7:0]    prbs_edge_time_config_in,
+    input wire [1:0]    filter_strength,          // 滤波器强度控制 (0=不滤波, 1=弱, 2=中, 3=强)
     
     // 输出信号
     output wire         prbs_valid,             // PRBS数据有效标志
@@ -59,6 +60,7 @@ prbs_edge_shaper edge_shaper (
     .prbs_bit_out(prbs_bit_out),
     .lfsr_clk_enable(lfsr_clk_enable),
     .prbs_edge_time_config_reg(prbs_edge_time_config_in),
+    .filter_strength(filter_strength),
     .shaped_prbs_data(shaped_prbs_data),
     .edge_state_dbg(edge_state_dbg),
     .edge_counter_dbg(edge_counter_dbg)

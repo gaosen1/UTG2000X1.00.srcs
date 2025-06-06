@@ -28,7 +28,7 @@
         {
             "label": "仿真 edge 波形",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/Mine && iverilog -o edge_shaper_sim.vvp prbs_edge_shaper_tb.v prbs_edge_shaper.v && vvp edge_shaper_sim.vvp && gtkwave -a edge_shaper_sim.gtkw edge_shaper_sim.vcd",
+            "command": "cd ${workspaceFolder}/Mine && iverilog -o edge_shaper_sim.vvp prbs_edge_shaper_tb.v prbs_edge_shaper.v && vvp edge_shaper_sim.vvp && gtkwave -a prbs_edge_shaper.gtkw edge_shaper_sim.vcd",
             "group": "test",
             "presentation": {
                 "reveal": "always",

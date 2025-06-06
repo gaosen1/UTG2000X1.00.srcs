@@ -1,0 +1,55 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Fri Jun  6 08:40:18 2025
+[*]
+[dumpfile] "/Users/gaosen/WORKSPACE/Z_HARDWARE/UTG2000X1.00.srcs/Mine/edge_shaper_sim.vcd"
+[dumpfile_mtime] "Wed Jun  4 07:23:47 2025"
+[dumpfile_size] 444594
+[savefile] "/Users/gaosen/WORKSPACE/Z_HARDWARE/UTG2000X1.00.srcs/Mine/prbs_edge_shaper.gtkw"
+[timestart] 2780000
+[size] 1336 600
+[pos] -1 -1
+*-21.000000 7080000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] prbs_edge_shaper_tb.
+[sst_width] 255
+[signals_width] 210
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+prbs_edge_shaper_tb.dac_clk
+prbs_edge_shaper_tb.reset_n
+@820
+prbs_edge_shaper_tb.state_name[160:1]
+@28
+prbs_edge_shaper_tb.lfsr_clk_enable
+prbs_edge_shaper_tb.prbs_bit_out
+@8022
+prbs_edge_shaper_tb.shaped_prbs_data[15:0]
+[pattern_trace] 1
+[pattern_trace] 0
